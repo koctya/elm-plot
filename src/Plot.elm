@@ -179,32 +179,32 @@ type alias AxisSummary =
 
 
 {-| -}
-circle : Float -> Float -> DataPoint msg
+circle : Int -> Float -> Float -> DataPoint msg
 circle =
     dot (viewCircle 5 pinkStroke)
 
 
 {-| -}
-square : Float -> Float -> DataPoint msg
+square : Int -> Float -> Float -> DataPoint msg
 square =
     dot (viewSquare 10 pinkStroke)
 
 
 {-| -}
-diamond : Float -> Float -> DataPoint msg
+diamond : Int -> Float -> Float -> DataPoint msg
 diamond =
     dot (viewDiamond 10 10 pinkStroke)
 
 
 {-| -}
-triangle : Float -> Float -> DataPoint msg
+triangle : Int -> Float -> Float -> DataPoint msg
 triangle =
     dot (viewTriangle pinkStroke)
 
 
 {-| A data point without a view.
 -}
-clear : Float -> Float -> DataPoint msg
+clear : Int -> Float -> Float -> DataPoint msg
 clear =
     dot (text "")
 
@@ -232,6 +232,7 @@ type alias DataPoint msg =
     , xTick : Maybe TickCustomizations
     , yTick : Maybe TickCustomizations
     , hint : Maybe (Html Never)
+    , id : Int
     , x : Float
     , y : Float
     }
@@ -239,14 +240,15 @@ type alias DataPoint msg =
 
 {-| Makes a data point provided a `view`, an `x` and a `y`.
 -}
-dot : Svg msg -> Float -> Float -> DataPoint msg
-dot view x y =
+dot : Svg msg -> Int -> Float -> Float -> DataPoint msg
+dot view id x y =
     { view = Just view
     , xLine = Nothing
     , yLine = Nothing
     , xTick = Nothing
     , yTick = Nothing
     , hint = Nothing
+    , id = id
     , x = x
     , y = y
     }
@@ -263,6 +265,7 @@ hintDot view hovering x y =
     , xTick = Nothing
     , yTick = Nothing
     , hint = onHovering (normalHint y) hovering x
+    , id = 0
     , x = x
     , y = y
     }
@@ -283,14 +286,15 @@ onHovering stuff hovering x =
 {-| Really a silly surprise dot you can use if you want to be flashy. Try it if
   you're feeling lucky.
 -}
-emphasizedDot : Svg msg -> Float -> Float -> DataPoint msg
-emphasizedDot view x y =
+emphasizedDot : Svg msg -> Int -> Float -> Float -> DataPoint msg
+emphasizedDot view id x y =
     { view = Just view
     , xLine = Just (fullLine [ stroke darkGrey, strokeDasharray "5, 5" ])
     , yLine = Just (fullLine [ stroke darkGrey, strokeDasharray "5, 5" ])
     , xTick = Nothing
     , yTick = Nothing
     , hint = Nothing
+    , id = id
     , x = x
     , y = y
     }
@@ -301,14 +305,15 @@ emphasizedDot view x y =
   You might want to use `clearAxis` to remove all the other useless chart junk, now that you have all
   these nice ticks.
 -}
-rangeFrameDot : Svg msg -> Float -> Float -> DataPoint msg
-rangeFrameDot view x y =
+rangeFrameDot : Svg msg -> Int -> Float -> Float -> DataPoint msg
+rangeFrameDot view id x y =
     { view = Just view
     , xLine = Nothing
     , yLine = Nothing
     , xTick = Just (simpleTick x)
     , yTick = Just (simpleTick y)
     , hint = Nothing
+    , id = id
     , x = x
     , y = y
     }
@@ -330,6 +335,7 @@ customDot :
     -> Maybe TickCustomizations
     -> Maybe TickCustomizations
     -> Maybe (Html Never)
+    -> Int
     -> Float
     -> Float
     -> DataPoint msg
@@ -663,7 +669,8 @@ defaultSeriesPlotCustomizations =
 {-| Just add whatever you want. A title might be an idea though.
 -}
 type alias JunkCustomizations msg =
-    { x : Float
+    { id : Int
+    , x : Float
     , y : Float
     , view : Svg msg
     }
@@ -696,9 +703,10 @@ are just floats which you can do anything you'd like with.
 
 You can of course also put other junk here, like legends for example.
 -}
-junk : Svg msg -> Float -> Float -> JunkCustomizations msg
-junk title x y =
-    { x = x
+junk : Svg msg -> Int -> Float -> Float -> JunkCustomizations msg
+junk title id x y =
+    { id = id
+    , x = x
     , y = y
     , view = title
     }
@@ -1282,8 +1290,8 @@ innerAttributes customizations =
 
 
 viewActualJunk : PlotSummary -> JunkCustomizations msg -> Svg msg
-viewActualJunk summary { x, y, view } =
-    g [ place summary { x = x, y = y } 0 0 ] [ view ]
+viewActualJunk summary { id, x, y, view } =
+    g [ place summary { id = id, x = x, y = y } 0 0 ] [ view ]
 
 
 
@@ -1310,7 +1318,8 @@ plotPosition =
 unScalePoint : PlotSummary -> Float -> Float -> DOM.Rectangle -> Maybe Point
 unScalePoint summary mouseX mouseY { left, top, width, height } =
     Just
-        { x = toNearestX summary <| toUnSVGX summary (summary.x.length * (mouseX - left) / width)
+        { id = 0
+        , x = toNearestX summary <| toUnSVGX summary (summary.x.length * (mouseX - left) / width)
         , y = clamp summary.y.min summary.y.max <| toUnSVGY summary (summary.y.length * (mouseY - top) / height)
         }
 
@@ -1422,7 +1431,7 @@ viewActualVerticalGrid : PlotSummary -> List GridLineCustomizations -> Svg Never
 viewActualVerticalGrid summary gridLines =
     let
         viewGridLine { attributes, position } =
-            draw attributes (linear summary [ { x = position, y = summary.y.min }, { x = position, y = summary.y.max } ])
+            draw attributes (linear summary [ { id = 0, x = position, y = summary.y.min }, { id = 0, x = position, y = summary.y.max } ])
     in
         g [ class "elm-plot__horizontal-grid" ] (List.map viewGridLine gridLines)
 
@@ -1445,7 +1454,7 @@ viewActualHorizontalGrid : PlotSummary -> List GridLineCustomizations -> Svg Nev
 viewActualHorizontalGrid summary gridLines =
     let
         viewGridLine { attributes, position } =
-            draw attributes (linear summary [ { x = summary.x.min, y = position }, { x = summary.x.max, y = position } ])
+            draw attributes (linear summary [ { id = 0, x = summary.x.min, y = position }, { id = 0, x = summary.x.max, y = position } ])
     in
         g [ class "elm-plot__vertical-grid" ] (List.map viewGridLine gridLines)
 
@@ -1520,13 +1529,13 @@ viewDataPoints plotSummary dataPoints =
 
 
 viewDataPoint : PlotSummary -> DataPoint msg -> Maybe (Svg msg)
-viewDataPoint plotSummary { x, y, view } =
+viewDataPoint plotSummary { id, x, y, view } =
     case view of
         Nothing ->
             Nothing
 
         Just svgView ->
-            Just <| g [ place plotSummary { x = x, y = y } 0 0 ] [ svgView ]
+            Just <| g [ place plotSummary { id = id, x = x, y = y } 0 0 ] [ svgView ]
 
 
 {-| Pass radius and color to make a circle!
@@ -1620,7 +1629,7 @@ viewActualBars summary { styles, maxWidth } groups =
                 [ label ]
 
         viewBar x attributes ( i, { height, label } ) =
-            g [ place summary { x = offset x i, y = max (closestToZero summary.y.min summary.y.max) height } 0 0 ]
+            g [ place summary { id = 0, x = offset x i, y = max (closestToZero summary.y.min summary.y.max) height } 0 0 ]
                 [ Svg.map never (Maybe.map viewLabel label |> Maybe.withDefault (text ""))
                 , rect
                     (attributes
@@ -1659,7 +1668,7 @@ viewActualHorizontalAxis : PlotSummary -> AxisCustomizations -> List LabelCustom
 viewActualHorizontalAxis summary { position, axisLine, ticks, labels, flipAnchor } glitterLabels glitterTicks =
     let
         at x =
-            { x = x, y = position summary.y.min summary.y.max }
+            { id = 0, x = x, y = position summary.y.min summary.y.max }
 
         lengthOfTick length =
             if flipAnchor then
@@ -1705,7 +1714,7 @@ viewActualVerticalAxis : PlotSummary -> AxisCustomizations -> List TickCustomiza
 viewActualVerticalAxis summary { position, axisLine, ticks, labels, flipAnchor } glitterTicks =
     let
         at y =
-            { x = position summary.x.min summary.x.max, y = y }
+            { id = 0, x = position summary.x.min summary.x.max, y = y }
 
         lengthOfTick length =
             if flipAnchor then
@@ -1779,8 +1788,8 @@ viewGlitterLines :
        }
     -> List (Svg Never)
 viewGlitterLines summary { xLine, yLine, x, y } =
-    [ viewAxisLine summary (\y -> { x = x, y = y }) (Maybe.map (\toLine -> toLine summary.y) xLine)
-    , viewAxisLine summary (\x -> { x = x, y = y }) (Maybe.map (\toLine -> toLine summary.x) yLine)
+    [ viewAxisLine summary (\y -> { id = 0, x = x, y = y }) (Maybe.map (\toLine -> toLine summary.y) xLine)
+    , viewAxisLine summary (\x -> { id = 0, x = x, y = y }) (Maybe.map (\toLine -> toLine summary.x) yLine)
     ]
 
 
@@ -1922,5 +1931,5 @@ points =
 
 
 point : DataPoint msg -> Point
-point { x, y } =
-    Point x y
+point { id, x, y } =
+    Point id x y
