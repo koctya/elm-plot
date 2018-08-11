@@ -1,7 +1,5 @@
-# DEPRECATED!
-
-The library is in the process of being split up in smaller libraries. The one for lines is public [here](https://github.com/terezka/lines).
-
+# This is a fork of terezka's elm-plot
+The main difference is that I added an integer ID to the data points to allow drilling down to detailed information on the data point.
 
 # Elm Plot
 
